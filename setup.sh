@@ -1,6 +1,6 @@
 #! /bin/bash
 
-INSTALLED_PATH=/usr/local/bin/bku
+INSTALLED_PATH=/usr/local/bin/gjt
 
 
 install() {
@@ -28,32 +28,32 @@ install() {
         fi
     fi
 
-    chmod +x ./bku.sh
-    sudo cp ./bku.sh "$INSTALLED_PATH"
-    echo "BKU installed to $INSTALLED_PATH"
+    chmod +x ./gjt.sh
+    sudo cp ./gjt.sh "$INSTALLED_PATH"
+    echo "gjt installed to $INSTALLED_PATH"
 }
 
 #!INFO: 
-# 1. Remove bku from system PATH
+# 1. Remove gjt from system PATH
 # 2. Delete any scheduled cron jobs
 # 3. Optionally clean-up residual files?
 
 uninstall() {
-    echo "Checking BKU installation..."
+    echo "Checking gjt installation..."
 
     if [ ! -f $INSTALLED_PATH ]; then
-        echo "Error: BKU is not installed in $INSTALLED_PATH. Nothing to uninstall."
+        echo "Error: gjt is not installed in $INSTALLED_PATH. Nothing to uninstall."
         exit 1
     fi
 
-    echo "Removing BKU from $INSTALLED_PATH..."
+    echo "Removing gjt from $INSTALLED_PATH..."
     sudo rm "$INSTALLED_PATH"
     echo "Removing scheduled backups..."
 
-    crontab -l 2>/dev/null | grep -v "./bku.sh" | crontab - 2>/dev/null || true
-    crontab -l 2>/dev/null | grep -v "bku" | crontab - 2>/dev/null || true
+    crontab -l 2>/dev/null | grep -v "./gjt.sh" | crontab - 2>/dev/null || true
+    crontab -l 2>/dev/null | grep -v "gjt" | crontab - 2>/dev/null || true
 
-    echo "BKU successfully uninstalled."
+    echo "gjt successfully uninstalled."
 }
 
 case "$1" in

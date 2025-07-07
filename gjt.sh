@@ -14,8 +14,8 @@ write_commit() {
         exit 1
     fi
 
-    temp="./.bku/.temp"
-    history="./.bku/history.log"
+    temp="./.gjt/.temp"
+    history="./.gjt/history.log"
     touch "$temp"
     echo "$timestamp: $msg" > "$temp"
     echo "$(cat $history)" >> "$temp"
@@ -23,8 +23,8 @@ write_commit() {
 }
 
 check_initialize() {
-    if [ ! -d '.bku' ]; then
-        echo "Must be a BKU root folder."
+    if [ ! -d '.gjt' ]; then
+        echo "Must be a gjt root folder."
         exit 1
     fi
 }
@@ -32,22 +32,22 @@ check_initialize() {
 
 init() {
     #!INFO:
-    # 1. Check if .bku exists, if does error
-    # 2. Otherwise, create .bku/, tracked_files, history.log,...
-    # 3. add the `$bku init`, aka create .bku timestamp to history.log
+    # 1. Check if .gjt exists, if does error
+    # 2. Otherwise, create .gjt/, tracked_files, history.log,...
+    # 3. add the `$gjt init`, aka create .gjt timestamp to history.log
     
-    if [ -d ".bku" ]; then
+    if [ -d ".gjt" ]; then
         echo "Error: Backup already initialized in this folder."
         exit 1
     fi
         
-    mkdir "./.bku"
-    mkdir "./.bku/diff"
-    touch "./.bku/tracked_files"
-    touch "./.bku/history.log"
+    mkdir "./.gjt"
+    mkdir "./.gjt/diff"
+    touch "./.gjt/tracked_files"
+    touch "./.gjt/history.log"
 
     timestamp=$(gen_commit_id)
-    write_commit "BKU Init." "$timestamp"
+    write_commit "GJT Init." "$timestamp"
     echo "Backup initialized."
 }
 
@@ -57,25 +57,25 @@ add() {
     #   1.1 If file 
     #       If file not exists error: echo "Error: src/main.c does not exist."
     #   1.2 If directory 
-    #       Not given info, what if user add .bku?????
+    #       Not given info, what if user add .GJT?????
     # 2. If $2 is empty
-    #   Track all file in current folder (exclude .bku)
-    #   2.1 Does it need to check for .bku exist folder and throw error?
+    #   Track all file in current folder (exclude .GJT)
+    #   2.1 Does it need to check for .GJT exist folder and throw error?
 
     arg="$1"
 
     if [ -z "$arg" ]; then 
-        files=$(find . -mindepth 1 -type f ! -path "./.bku/*" ! -path "./.bku")
+        files=$(find . -mindepth 1 -type f ! -path "./.git/*" ! -path "./.git")
         for file in $files; do
             file=$(realpath --relative-to=. "$file")
 
-            if ! grep -qx "$file" ".bku/tracked_files"; then
-                echo "$file" >> ".bku/tracked_files"
+            if ! grep -qx "$file" ".git/tracked_files"; then
+                echo "$file" >> ".gjt/tracked_files"
             fi
 
-            bku_file=".bku/$(echo "$file" | tr '/' '_')"
-            mkdir -p "$bku_file"
-            cp "$file" "$bku_file/latest"
+            gjt_file=".gjt/$(echo "$file" | tr '/' '_')"
+            mkdir -p "$gjt_file"
+            cp "$file" "$gjt_file/latest"
             echo "Added $file to backup tracking."
         done
         return
@@ -83,13 +83,13 @@ add() {
 
     if [ -f "$arg" ]; then
         arg=$(realpath --relative-to=. "$arg")
-        if $(grep -q "$arg" "./.bku/tracked_files"); then
+        if $(grep -q "$arg" "./.gjt/tracked_files"); then
             echo "Error: $arg is already tracked."
             exit 1
         fi
-        mkdir -p ".bku/$(echo "$arg" | tr '/' '_')"
-        echo "$arg" >> ".bku/tracked_files"
-        cp "$arg" ".bku/$(echo "$arg" | tr '/' '_')/latest"
+        mkdir -p ".gjt/$(echo "$arg" | tr '/' '_')"
+        echo "$arg" >> ".gjt/tracked_files"
+        cp "$arg" ".gjt/$(echo "$arg" | tr '/' '_')/latest"
         echo "Added $arg to backup tracking."
         return
     fi
@@ -100,7 +100,7 @@ add() {
 
 status() {
     #!INFO:
-    # 1. Error if not intialize bku folder
+    # 1. Error if not intialize gjt folder
     # 2. Error if file not track:
     #   echo "Error: src/main.c is not tracked."
     # 3. Error if no file has been track???? (what differ from above), this should have higher priority
@@ -109,19 +109,19 @@ status() {
     arg="$1"
 
     # Check if any files are tracked
-    if [ ! -s ".bku/tracked_files" ]; then
+    if [ ! -s ".gjt/tracked_files" ]; then
         echo "Error: Nothing has been tracked."
         exit 1
     fi
 
     if [ -z "$arg" ]; then
-        files=$(cat .bku/tracked_files)
+        files=$(cat .gjt/tracked_files)
         any_tracked=false
         
         for file in $files; do
             file_real=$(realpath --relative-to=. "$file")
-            bku_file=".bku/$(echo "$file_real" | tr '/' '_')"
-            latest="$bku_file/latest"
+            gjt_file=".gjt/$(echo "$file_real" | tr '/' '_')"
+            latest="$gjt_file/latest"
 
             if [ ! -f "$latest" ]; then
                 echo "Error: $file_real is not tracked."
@@ -152,10 +152,10 @@ status() {
 
     if [ -f "$arg" ]; then
         file=$(realpath --relative-to=. "$arg")
-        bku_file=".bku/$(echo "$file" | tr '/' '_')"
-        latest="$bku_file/latest"
+        gjt_file=".gjt/$(echo "$file" | tr '/' '_')"
+        latest="$gjt_file/latest"
 
-        if ! grep -Fxq "$file" .bku/tracked_files; then
+        if ! grep -Fxq "$file" .gjt/tracked_files; then
             echo "Error: $file is not tracked."
             exit 1
         fi
@@ -179,7 +179,7 @@ status() {
 commit() {
     #!INFO:
     # 1. Gen commitID (format `hh:mm-DD/MM/YYYY`) 
-    # 2. Store diffs of changed files in .bku 
+    # 2. Store diffs of changed files in .gjt 
     # 3. Update history
     # 4. If no files provided, commit all changed tracked files
     # 5. Commit message is mandatory (does commit message require: (file name) at the end)
@@ -199,12 +199,12 @@ commit() {
     # Commit all changed 'tracked files'
     if [ -z "$dir" ]; then
         filename=""
-        files=$(find . -type f ! -path "./.bku/*" ! -path "./.bku")
+        files=$(find . -type f ! -path "./.gjt/*" ! -path "./.gjt")
         any_tracked_or_unchange=false
 
         for file in $files; do
             file=$(realpath --relative-to=. "$file")
-            latest=".bku/$(echo "$file" | tr '/' '_')/latest"
+            latest=".gjt/$(echo "$file" | tr '/' '_')/latest"
 
             # If no change then diff will return 0
             if [ -f "$latest" ] && ! diff_output=$(diff -u "$latest" "$file" 2>&1); then
@@ -217,7 +217,7 @@ commit() {
                     filename+=",$file"
                 fi
 
-                echo "$diff_output" > "./.bku/diff/$diff_name"
+                echo "$diff_output" > "./.gjt/diff/$diff_name"
                 cp "$file" "$latest"
 
                 echo "Committed $file with ID $timestamp."
@@ -235,7 +235,7 @@ commit() {
 
     if [ -f "$dir" ]; then
         file=$(realpath --relative-to=. "$dir")
-        latest=".bku/$(echo "$file" | tr '/' '_')/latest"
+        latest=".gjt/$(echo "$file" | tr '/' '_')/latest"
         diff_name="$(echo "$file" | tr '/' '_').diff"
         
         # No changes or untracked
@@ -244,7 +244,7 @@ commit() {
             exit 1
         fi
 
-        echo "$diff_output" > "./.bku/diff/$diff_name"
+        echo "$diff_output" > "./.gjt/diff/$diff_name"
         cp "$file" "$latest"
 
         write_commit "$msg ($dir)." "$timestamp"
@@ -257,7 +257,7 @@ commit() {
 
 
 history() {
-    echo "$(cat ./.bku/history.log)"
+    echo "$(cat ./.gjt/history.log)"
 }
 
 restore() {
@@ -267,7 +267,7 @@ restore() {
     dir="$1"
 
     if [ -z "$dir" ]; then
-        files=$(cat .bku/tracked_files)
+        files=$(cat .gjt/tracked_files)
     else
         files="$dir"
     fi
@@ -275,18 +275,18 @@ restore() {
     local success=1
     for file in $files; do
         clean_file=$(echo "$file" | sed 's|^\./||')
-        if ! grep -Fxq "$clean_file" .bku/tracked_files; then
+        if ! grep -Fxq "$clean_file" .gjt/tracked_files; then
             echo "Error: $file is not tracked."
             continue
         fi
 
         backup_file=$(echo "$clean_file" | sed 's|/|_|g')
-        latest_diff=".bku/diff/$backup_file.diff"  # Adjusted to match your commit() diff path
+        latest_diff=".gjt/diff/$backup_file.diff"  # Adjusted to match your commit() diff path
         if [ -f "$latest_diff" ]; then
             patch -R "$file" < "$latest_diff" 2>&1 > /dev/null
             echo "Restored $file to its previous version."
             rm "$latest_diff"
-            cp "$file" ".bku/$(echo "$clean_file" | tr '/' '_')/latest"
+            cp "$file" ".gjt/$(echo "$clean_file" | tr '/' '_')/latest"
             success=0
         else
             echo "Error: No previous version available for $clean_file"
@@ -298,19 +298,19 @@ restore() {
 schedule() {
     case "$1" in
         --daily)
-            (crontab -l 2>/dev/null; echo "0 0 * * * ./bku.sh commit \"Scheduled backup\"") | crontab -
+            (crontab -l 2>/dev/null; echo "0 0 * * * ./gjt.sh commit \"Scheduled backup\"") | crontab -
             echo "Scheduled daily backups at daily."
             ;;
         --hourly)
-            (crontab -l 2>/dev/null; echo "0 * * * * ./bku.sh commit \"Scheduled backup\"") | crontab -
+            (crontab -l 2>/dev/null; echo "0 * * * * ./gjt.sh commit \"Scheduled backup\"") | crontab -
             echo "Scheduled hourly backups at hourly."
             ;;
         --weekly)
-            (crontab -l 2>/dev/null; echo "0 0 * * 1 ./bku.sh commit \"Scheduled backup\"") | crontab -
+            (crontab -l 2>/dev/null; echo "0 0 * * 1 ./gjt.sh commit \"Scheduled backup\"") | crontab -
             echo "Scheduled weekly backups at weekly."
             ;;
         --off)
-            crontab -l 2>/dev/null | grep -v "bku.sh commit \"Scheduled backup\"" | crontab -
+            crontab -l 2>/dev/null | grep -v "gjt.sh commit \"Scheduled backup\"" | crontab -
             echo "Backup scheduling disabled."
             ;;
         *)
@@ -324,8 +324,8 @@ schedule() {
 
 stop() {
 
-    if [ -d '.bku' ]; then
-        rm -r ".bku"
+    if [ -d '.gjt' ]; then
+        rm -r ".gjt"
         crontab -l 2>/dev/null | grep -Fv -e "${jobs[@]}" | crontab -
         echo "Backup system removed."
     else
@@ -334,7 +334,7 @@ stop() {
     fi
 }
 
-# bku add abcd
+# gjt add abcd
 case "$1" in 
     init) 
         init 
