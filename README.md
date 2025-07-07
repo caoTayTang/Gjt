@@ -7,14 +7,14 @@
 
 ## ✨ Features
 
-- 📝 Initialize `gjt init <filename>`
-- 📝 Track changes to files via `gjt add <filename>`
-- 💾 Save changes using `gjt commit`
-- 🔁 View commit history `gjt history`
-- 🔁 Revert to the previous committed state with `gjt restore`
--    Compare working files to the last committed version with `gjt status`
--    Schedule commit with cronjob `gjt schedule`
-- 🧠 Written in pure Bash, no external dependencies beyond standard Unix tools
+-  Initialize `gjt init <filename>`
+-  Track changes to files via `gjt add <filename>`
+-  Save changes using `gjt commit`
+-  View commit history `gjt history`
+-  Revert to the previous committed state with `gjt restore`
+-  Compare working files to the last committed version with `gjt status`
+-  Schedule commit with cronjob `gjt schedule`
+-  Written in pure Bash, no external dependencies beyond standard Unix tools
 ---
 
 ## 📦 Installation
